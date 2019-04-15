@@ -31,16 +31,25 @@ class __PLUGIN_NAME___Loader
 	 * @access   protected
 	 * @var      array    $actions    The actions registered with WordPress to fire when the plugin loads.
 	 */
-	protected $actions;
-
-	/**
-	 * The array of filters registered with WordPress.
-	 *
-	 * @since    __PLUGIN_VERSION__
-	 * @access   protected
-	 * @var      array    $filters    The filters registered with WordPress to fire when the plugin loads.
-	 */
-	protected $filters;
+	protected $actions = [];
+    
+    /**
+     * The array of filters registered with WordPress.
+     *
+     * @since    __PLUGIN_VERSION__
+     * @access   protected
+     * @var      array    $filters    The filters registered with WordPress to fire when the plugin loads.
+     */
+    protected $filters = [];
+    
+    /**
+     * The array of shortcodes registered with WordPress.
+     *
+     * @since    __PLUGIN_VERSION__
+     * @access   protected
+     * @var      array    $shortcodes    The shortcodes registered with WordPress to fire when the plugin loads.
+     */
+    protected $shortcodes = [];
 
 	/**
 	 * Initialize the collections used to maintain the actions and filters.
@@ -49,17 +58,26 @@ class __PLUGIN_NAME___Loader
 	 */
 	public function __construct()
 	{
-		$this->actions = [];
-		$this->filters = [];
+	
 	}
+    
+    /**
+     * @param object|string|null $component
+     * @param string|callable $callback
+     * @return array|string|callable
+     */
+	protected function parse_callback($component, $callback)
+    {
+        return (null === $component) ? $callback : [$component, $callback];
+    }
 
 	/**
 	 * Add a new action to the collection to be registered with WordPress.
 	 *
 	 * @since    __PLUGIN_VERSION__
 	 * @param    string               $hook             The name of the WordPress action that is being registered.
-	 * @param    object               $component        A reference to the instance of the object on which the action is defined.
-	 * @param    string               $callback         The name of the function definition on the $component.
+	 * @param    object|string|null   $component        A reference to the instance of the object on which the action is defined.
+	 * @param    string|callable      $callback         The name of the function definition on the $component.
 	 * @param    int                  $priority         Optional. The priority at which the function should be fired. Default is 10.
 	 * @param    int                  $accepted_args    Optional. The number of arguments that should be passed to the $callback. Default is 1.
 	 */
@@ -73,8 +91,8 @@ class __PLUGIN_NAME___Loader
 	 *
 	 * @since    __PLUGIN_VERSION__
 	 * @param    string               $hook             The name of the WordPress filter that is being registered.
-	 * @param    object               $component        A reference to the instance of the object on which the filter is defined.
-	 * @param    string               $callback         The name of the function definition on the $component.
+	 * @param    object|string|null   $component        A reference to the instance of the object on which the filter is defined.
+	 * @param    string|callable      $callback         The name of the function definition on the $component.
 	 * @param    int                  $priority         Optional. The priority at which the function should be fired. Default is 10.
 	 * @param    int                  $accepted_args    Optional. The number of arguments that should be passed to the $callback. Default is 1
 	 */
@@ -91,8 +109,8 @@ class __PLUGIN_NAME___Loader
 	 * @access   private
 	 * @param    array                $hooks            The collection of hooks that is being registered (that is, actions or filters).
 	 * @param    string               $hook             The name of the WordPress filter that is being registered.
-	 * @param    object               $component        A reference to the instance of the object on which the filter is defined.
-	 * @param    string               $callback         The name of the function definition on the $component.
+	 * @param    object|string|null   $component        A reference to the instance of the object on which the filter is defined.
+	 * @param    string|callable      $callback         The name of the function definition on the $component.
 	 * @param    int                  $priority         The priority at which the function should be fired.
 	 * @param    int                  $accepted_args    The number of arguments that should be passed to the $callback.
 	 * @return   array                                  The collection of actions and filters registered with WordPress.
@@ -117,12 +135,16 @@ class __PLUGIN_NAME___Loader
 	 */
 	public function run()
 	{
-		foreach ($this->filters as $hook) {
-			add_filter($hook['hook'], array($hook['component'], $hook['callback']), $hook['priority'], $hook['accepted_args']);
+		foreach ($this->filters as $filter) {
+			add_filter($filter['hook'], $this->parse_callback($filter['component'], $filter['callback']), $filter['priority'], $filter['accepted_args']);
 		}
 
-		foreach ($this->actions as $hook) {
-			add_action($hook['hook'], array($hook['component'], $hook['callback']), $hook['priority'], $hook['accepted_args']);
+		foreach ($this->actions as $action) {
+			add_action($action['hook'], $this->parse_callback($action['component'], $action['callback']), $action['priority'], $action['accepted_args']);
 		}
+		
+		foreach ($this->shortcodes as $shortcode) {
+		    add_shortcode($shortcode['hook'], $this->parse_callback($shortcode['component'], $shortcode['callback']));
+        }
 	}
 }
